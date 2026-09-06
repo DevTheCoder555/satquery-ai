@@ -3,7 +3,7 @@ import { useDropzone } from 'react-dropzone'
 import axios from 'axios'
 import { X, Upload } from 'lucide-react'
 
-const API_URL = 'http://localhost:8000/api'
+const API_URL = 'https://satquery-ai-wfb8.onrender.com/api'
 
 export default function ImageUploader({ onImagesUploaded }) {
   const [images, setImages] = useState([])

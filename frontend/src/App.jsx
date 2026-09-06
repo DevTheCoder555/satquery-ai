@@ -5,7 +5,7 @@ import ResultPanel from './components/ResultPanel'
 import ChatHistory from './components/ChatHistory'
 import axios from 'axios'
 
-const API_URL = 'http://localhost:8000/api'
+const API_URL = 'https://satquery-ai-wfb8.onrender.com/api'
 
 function App() {
   const [uploadedImages, setUploadedImages] = useState([])
