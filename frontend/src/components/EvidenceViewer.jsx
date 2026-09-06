@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 // FastAPI backend origin
-const API_ORIGIN = 'https://satquery-ai-wfb8.onrender.com/api'
+const API_ORIGIN = 'http://localhost:8000/api'
 
 /**
  * Converts the URL returned by the backend into a browser-accessible URL.

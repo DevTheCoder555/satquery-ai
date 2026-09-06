@@ -17,9 +17,9 @@
     "f1_score": 0.81,
     "precision": 0.84,
     "recall": 0.78,
-    "total_tests": 186,
+    "total_tests": 187,
     "avg_change_detection_rate": 0.23,
-    "last_updated": "2026-09-06T11:23:59.114285"
+    "last_updated": "2026-09-06T12:18:12.542295"
   },
   "optical_sar": {
     "fusion_improvement": 0.15,
@@ -28,12 +28,12 @@
     "last_updated": "2026-09-06T09:10:12.914282"
   },
   "overall": {
-    "avg_response_time": 1.786341943697298,
-    "total_analyses": 657,
+    "avg_response_time": 1.7846760318634358,
+    "total_analyses": 658,
     "user_satisfaction": 4.2,
-    "success_rate": 0.0106544901065449,
-    "last_updated": "2026-09-06T11:23:59.114302",
-    "successful_analyses": 7
+    "success_rate": 0.0121580547112462,
+    "last_updated": "2026-09-06T12:18:12.542934",
+    "successful_analyses": 8
   },
   "benchmarks": {
     "datasets_used": [
