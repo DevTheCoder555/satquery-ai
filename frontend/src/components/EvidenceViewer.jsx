@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 // FastAPI backend origin
-const API_ORIGIN = 'https://satquery-ai-wfb8.onrender.com/api'
+const API_ORIGIN ='https://satquery-ai-wfb8.onrender.com'
 
 /**
  * Converts the URL returned by the backend into a browser-accessible URL.
@@ -13,22 +13,25 @@ const API_ORIGIN = 'https://satquery-ai-wfb8.onrender.com/api'
  *   "http://localhost:8000/evidence/change_map.png"
  */
 function getImageUrl(url) {
-  if (!url) {
-    return ''
-  }
+  if (!url) return ''
 
   // Already a complete URL
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url
   }
 
-  // Relative backend URL
-  if (url.startsWith('/')) {
+  // Backend already returned /api/...
+  if (url.startsWith('/api/')) {
     return `${API_ORIGIN}${url}`
   }
 
-  // Relative URL without leading slash
-  return `${API_ORIGIN}/${url}`
+  // Backend returned /uploads/...
+  if (url.startsWith('/uploads/')) {
+    return `${API_ORIGIN}/api${url}`
+  }
+
+  // Filename only
+  return `${API_ORIGIN}/api/${url}`
 }
 
 export default function EvidenceViewer({ evidenceImages }) {
