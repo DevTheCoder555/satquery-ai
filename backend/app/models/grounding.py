@@ -1,8 +1,6 @@
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
-import base64
-import io
 import uuid
 
 
@@ -26,16 +24,30 @@ class GroundingModel:
         mask, bbox = self._detect_target_region(image_array, target)
 
         # Generate visualization
-        highlighted_image = self._create_highlighted_image(image, mask, bbox, target)
+        highlighted_image = self._create_highlighted_image(
+            image,
+            mask,
+            bbox,
+            target
+        )
 
         # Generate answer
-        answer = self._generate_answer(target, bbox, image_array.shape)
+        answer = self._generate_answer(
+            target,
+            bbox,
+            image_array.shape
+        )
 
         # Calculate confidence
-        confidence = self._calculate_confidence(mask, target)
+        confidence = self._calculate_confidence(
+            mask,
+            target
+        )
 
         # Save evidence image
-        evidence_path = self._save_evidence_image(highlighted_image)
+        evidence_path = self._save_evidence_image(
+            highlighted_image
+        )
 
         return {
             "answer": answer,
@@ -44,19 +56,27 @@ class GroundingModel:
                 {
                     "type": "grounding_result",
                     "description": f"Highlighted location of {target}",
-                    "url": f"/uploads/{evidence_path}",
+                    "url": f"/api/uploads/{evidence_path}",
                 }
             ],
         }
 
-    def _detect_target_region(self, image_array: np.ndarray, target: str) -> tuple:
+    def _detect_target_region(
+        self,
+        image_array: np.ndarray,
+        target: str
+    ) -> tuple:
         """Detect target region using color-based segmentation"""
 
         target_lower = target.lower()
 
-        # Create mask based on target type
-        if "water" in target_lower or "river" in target_lower or "lake" in target_lower:
+        if (
+            "water" in target_lower
+            or "river" in target_lower
+            or "lake" in target_lower
+        ):
             mask = self._segment_water(image_array)
+
         elif (
             "vegetation" in target_lower
             or "forest" in target_lower
@@ -64,18 +84,27 @@ class GroundingModel:
             or "tree" in target_lower
         ):
             mask = self._segment_vegetation(image_array)
+
         elif (
             "building" in target_lower
             or "built" in target_lower
             or "urban" in target_lower
         ):
             mask = self._segment_built_up(image_array)
-        elif "road" in target_lower or "highway" in target_lower:
+
+        elif (
+            "road" in target_lower
+            or "highway" in target_lower
+        ):
             mask = self._segment_roads(image_array)
-        elif "soil" in target_lower or "bare" in target_lower:
+
+        elif (
+            "soil" in target_lower
+            or "bare" in target_lower
+        ):
             mask = self._segment_bare_soil(image_array)
+
         else:
-            # Default: segment most prominent feature
             mask = self._segment_most_prominent(image_array)
 
         # Find bounding box
@@ -83,58 +112,96 @@ class GroundingModel:
 
         return mask, bbox
 
-    def _segment_water(self, image_array: np.ndarray) -> np.ndarray:
+    def _segment_water(
+        self,
+        image_array: np.ndarray
+    ) -> np.ndarray:
         """Segment water bodies"""
+
         if len(image_array.shape) != 3:
-            return np.zeros(image_array.shape[:2], dtype=bool)
+            return np.zeros(
+                image_array.shape[:2],
+                dtype=bool
+            )
 
         b = image_array[:, :, 2].astype(float)
         r = image_array[:, :, 0].astype(float)
         g = image_array[:, :, 1].astype(float)
 
-        # Water: high blue, low red and green
-        water_mask = (b > r * 1.1) & (b > g * 1.1) & (b > 50)
+        water_mask = (
+            (b > r * 1.1)
+            & (b > g * 1.1)
+            & (b > 50)
+        )
 
         return water_mask
 
-    def _segment_vegetation(self, image_array: np.ndarray) -> np.ndarray:
+    def _segment_vegetation(
+        self,
+        image_array: np.ndarray
+    ) -> np.ndarray:
         """Segment vegetation"""
+
         if len(image_array.shape) != 3:
-            return np.zeros(image_array.shape[:2], dtype=bool)
+            return np.zeros(
+                image_array.shape[:2],
+                dtype=bool
+            )
 
         g = image_array[:, :, 1].astype(float)
         r = image_array[:, :, 0].astype(float)
         b = image_array[:, :, 2].astype(float)
 
-        # Vegetation: high green, NDVI-like
-        veg_mask = (g > r) & (g > b) & (g > 50) & ((g - r) > 10)
+        veg_mask = (
+            (g > r)
+            & (g > b)
+            & (g > 50)
+            & ((g - r) > 10)
+        )
 
         return veg_mask
 
-    def _segment_built_up(self, image_array: np.ndarray) -> np.ndarray:
+    def _segment_built_up(
+        self,
+        image_array: np.ndarray
+    ) -> np.ndarray:
         """Segment built-up areas"""
+
         if len(image_array.shape) != 3:
-            return np.zeros(image_array.shape[:2], dtype=bool)
+            return np.zeros(
+                image_array.shape[:2],
+                dtype=bool
+            )
 
         r = image_array[:, :, 0].astype(float)
         g = image_array[:, :, 1].astype(float)
         b = image_array[:, :, 2].astype(float)
 
-        # Built-up: gray/brown tones
-        built_mask = (np.abs(r - g) < 30) & (np.abs(g - b) < 30) & (r > 80) & (r < 200)
+        built_mask = (
+            (np.abs(r - g) < 30)
+            & (np.abs(g - b) < 30)
+            & (r > 80)
+            & (r < 200)
+        )
 
         return built_mask
 
-    def _segment_roads(self, image_array: np.ndarray) -> np.ndarray:
-        """Segment roads (simplified)"""
+    def _segment_roads(
+        self,
+        image_array: np.ndarray
+    ) -> np.ndarray:
+        """Segment roads"""
+
         if len(image_array.shape) != 3:
-            return np.zeros(image_array.shape[:2], dtype=bool)
+            return np.zeros(
+                image_array.shape[:2],
+                dtype=bool
+            )
 
         r = image_array[:, :, 0].astype(float)
         g = image_array[:, :, 1].astype(float)
         b = image_array[:, :, 2].astype(float)
 
-        # Roads: bright gray/white linear features
         road_mask = (
             (r > 150)
             & (g > 150)
@@ -145,38 +212,67 @@ class GroundingModel:
 
         return road_mask
 
-    def _segment_bare_soil(self, image_array: np.ndarray) -> np.ndarray:
+    def _segment_bare_soil(
+        self,
+        image_array: np.ndarray
+    ) -> np.ndarray:
         """Segment bare soil"""
+
         if len(image_array.shape) != 3:
-            return np.zeros(image_array.shape[:2], dtype=bool)
+            return np.zeros(
+                image_array.shape[:2],
+                dtype=bool
+            )
 
         r = image_array[:, :, 0].astype(float)
         g = image_array[:, :, 1].astype(float)
         b = image_array[:, :, 2].astype(float)
 
-        # Bare soil: brown/tan
-        soil_mask = (r > g) & (g > b) & (r > 100) & (r < 200) & ((r - b) > 30)
+        soil_mask = (
+            (r > g)
+            & (g > b)
+            & (r > 100)
+            & (r < 200)
+            & ((r - b) > 30)
+        )
 
         return soil_mask
 
-    def _segment_most_prominent(self, image_array: np.ndarray) -> np.ndarray:
+    def _segment_most_prominent(
+        self,
+        image_array: np.ndarray
+    ) -> np.ndarray:
         """Segment most prominent feature"""
-        if len(image_array.shape) != 3:
-            return np.zeros(image_array.shape[:2], dtype=bool)
 
-        # Use variance to find prominent regions
+        if len(image_array.shape) != 3:
+            return np.zeros(
+                image_array.shape[:2],
+                dtype=bool
+            )
+
         gray = np.mean(image_array, axis=2)
         mean_val = np.mean(gray)
 
-        # High variance regions
-        prominent = np.abs(gray - mean_val) > np.std(gray)
+        prominent = (
+            np.abs(gray - mean_val)
+            > np.std(gray)
+        )
 
         return prominent
 
-    def _mask_to_bbox(self, mask: np.ndarray) -> tuple:
+    def _mask_to_bbox(
+        self,
+        mask: np.ndarray
+    ) -> tuple:
         """Convert binary mask to bounding box"""
+
         if not np.any(mask):
-            return (0, 0, mask.shape[1], mask.shape[0])
+            return (
+                0,
+                0,
+                mask.shape[1],
+                mask.shape[0]
+            )
 
         rows = np.any(mask, axis=1)
         cols = np.any(mask, axis=0)
@@ -184,59 +280,103 @@ class GroundingModel:
         ymin, ymax = np.where(rows)[0][[0, -1]]
         xmin, xmax = np.where(cols)[0][[0, -1]]
 
-        return (int(xmin), int(ymin), int(xmax), int(ymax))
+        return (
+            int(xmin),
+            int(ymin),
+            int(xmax),
+            int(ymax)
+        )
 
     def _create_highlighted_image(
-        self, image: Image.Image, mask: np.ndarray, bbox: tuple, target: str
+        self,
+        image: Image.Image,
+        mask: np.ndarray,
+        bbox: tuple,
+        target: str
     ) -> Image.Image:
         """Create visualization with highlighted region"""
 
-        # Create copy
         highlighted = image.copy()
         draw = ImageDraw.Draw(highlighted)
 
-        # Draw bounding box
+        # Bounding box
         xmin, ymin, xmax, ymax = bbox
-        draw.rectangle([xmin, ymin, xmax, ymax], outline="red", width=3)
 
-        # Add label
+        draw.rectangle(
+            [xmin, ymin, xmax, ymax],
+            outline="red",
+            width=3
+        )
+
+        # Label
         label = target.upper()
+
         try:
             font = ImageFont.truetype(
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                20
             )
-        except:
+        except Exception:
             font = ImageFont.load_default()
 
-        # Draw label background
-        text_bbox = draw.textbbox((xmin, ymin - 30), label, font=font)
-        draw.rectangle(text_bbox, fill="red")
-        draw.text((xmin, ymin - 30), label, fill="white", font=font)
+        # Make sure label doesn't go outside image
+        label_y = max(0, ymin - 30)
 
-        # Add semi-transparent overlay for masked region
-        overlay = Image.new("RGBA", image.size, (0, 0, 0, 0))
-        overlay_draw = ImageDraw.Draw(overlay)
+        text_bbox = draw.textbbox(
+            (xmin, label_y),
+            label,
+            font=font
+        )
 
-        # Create mask visualization
-        mask_rgb = np.zeros((*mask.shape, 4), dtype=np.uint8)
-        mask_rgb[mask, 0] = 255  # Red
-        mask_rgb[mask, 3] = 100  # Semi-transparent
+        draw.rectangle(
+            text_bbox,
+            fill="red"
+        )
 
-        mask_image = Image.fromarray(mask_rgb, "RGBA")
-        highlighted = Image.alpha_composite(highlighted.convert("RGBA"), mask_image)
+        draw.text(
+            (xmin, label_y),
+            label,
+            fill="white",
+            font=font
+        )
+
+        # Transparent mask overlay
+        mask_rgb = np.zeros(
+            (*mask.shape, 4),
+            dtype=np.uint8
+        )
+
+        mask_rgb[mask, 0] = 255
+        mask_rgb[mask, 3] = 100
+
+        mask_image = Image.fromarray(
+            mask_rgb,
+            "RGBA"
+        )
+
+        highlighted = Image.alpha_composite(
+            highlighted.convert("RGBA"),
+            mask_image
+        )
 
         return highlighted.convert("RGB")
 
-    def _generate_answer(self, target: str, bbox: tuple, image_shape: tuple) -> str:
+    def _generate_answer(
+        self,
+        target: str,
+        bbox: tuple,
+        image_shape: tuple
+    ) -> str:
         """Generate natural language answer"""
+
         xmin, ymin, xmax, ymax = bbox
+
         img_height, img_width = image_shape[:2]
 
-        # Calculate position description
         center_x = (xmin + xmax) / 2
         center_y = (ymin + ymax) / 2
 
-        # Relative position
+        # Vertical position
         if center_y < img_height / 3:
             vertical = "northern"
         elif center_y > 2 * img_height / 3:
@@ -244,6 +384,7 @@ class GroundingModel:
         else:
             vertical = "central"
 
+        # Horizontal position
         if center_x < img_width / 3:
             horizontal = "western"
         elif center_x > 2 * img_width / 3:
@@ -251,40 +392,91 @@ class GroundingModel:
         else:
             horizontal = "central"
 
-        position = f"{vertical} {horizontal}" if vertical != horizontal else vertical
+        if vertical == horizontal:
+            position = vertical
+        else:
+            position = f"{vertical} {horizontal}"
 
-        # Calculate size
+        # Coverage
         width = xmax - xmin
         height = ymax - ymin
+
         area = width * height
         total_area = img_width * img_height
-        coverage = (area / total_area) * 100
 
-        return f"The {target} is located in the {position} region of the image. It covers approximately {coverage:.1f}% of the scene and spans from coordinates ({xmin}, {ymin}) to ({xmax}, {ymax})."
+        coverage = (
+            area / total_area
+        ) * 100
 
-    def _calculate_confidence(self, mask: np.ndarray, target: str) -> float:
+        return (
+            f"The {target} is located in the "
+            f"{position} region of the image. "
+            f"It covers approximately "
+            f"{coverage:.1f}% of the scene and "
+            f"spans from coordinates "
+            f"({xmin}, {ymin}) to "
+            f"({xmax}, {ymax})."
+        )
+
+    def _calculate_confidence(
+        self,
+        mask: np.ndarray,
+        target: str
+    ) -> float:
         """Calculate confidence score"""
 
-        # Base confidence
         confidence = 0.80
 
-        # Check if mask has reasonable coverage
-        mask_coverage = np.sum(mask) / (mask.shape[0] * mask.shape[1])
+        mask_coverage = (
+            np.sum(mask)
+            / (mask.shape[0] * mask.shape[1])
+        )
 
         if 0.01 < mask_coverage < 0.5:
             confidence += 0.10
+
         elif mask_coverage < 0.01:
             confidence -= 0.20
 
-        return min(max(confidence, 0.5), 0.95)
+        return min(
+            max(confidence, 0.5),
+            0.95
+        )
 
-def _save_evidence_image(self, image: Image.Image) -> str:
-    """Save evidence image and return filename"""
-    filename = f"grounding_{uuid.uuid4().hex[:8]}.png"
-    # Use absolute path from backend directory
-    backend_dir = Path(__file__).parent.parent.parent
-    uploads_dir = backend_dir / "uploads"
-    uploads_dir.mkdir(exist_ok=True)
-    filepath = uploads_dir / filename
-    image.save(filepath)
-    return filename
+    def _save_evidence_image(
+        self,
+        image: Image.Image
+    ) -> str:
+        """Save evidence image and return filename"""
+
+        filename = (
+            f"grounding_{uuid.uuid4().hex[:8]}.png"
+        )
+
+        # backend/app/models/this_file.py
+        # Go up to backend/
+        backend_dir = (
+            Path(__file__)
+            .resolve()
+            .parent
+            .parent
+            .parent
+        )
+
+        # backend/uploads/
+        uploads_dir = backend_dir / "uploads"
+
+        uploads_dir.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+
+        filepath = uploads_dir / filename
+
+        # Save image
+        image.save(
+            filepath,
+            format="PNG"
+        )
+
+        return filename
